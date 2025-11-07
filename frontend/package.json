@@ -1,0 +1,28 @@
+{
+  "name": "bowtie-risk-visualization",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.1",
+    "reactflow": "^11.10.4",
+    "elkjs": "^0.9.0",
+    "classcat": "^5.0.4",
+    "jspdf": "^2.5.2",
+    "html-to-image": "^1.11.11",
+    "svg2pdf.js": "^2.2.4"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.2",
+    "@vitejs/plugin-react": "^4.3.1",
+    "vite": "^5.4.2"
+  }
+}
