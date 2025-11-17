@@ -1,63 +1,89 @@
-import ELK from 'elkjs/lib/elk.bundled.js';
+import React from 'react'
 
-const elk = new ELK();
+let elkInstance = null
 
-const DEFAULT_NODE_SIZE = {
-  width: 320,
-  height: 140
-};
-
-const elkOptions = {
-  'elk.algorithm': 'layered',
-  'elk.direction': 'RIGHT',
-  'elk.layered.layering.strategy': 'LONGEST_PATH',
-  'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX',
-  'elk.layered.spacing.edgeNodeBetweenLayers': '160',
-  'elk.layered.spacing.nodeNodeBetweenLayers': '220',
-  'elk.layered.spacing.nodeNode': '120',
-  'elk.spacing.nodeNode': '120',
-  'elk.spacing.edgeEdge': '100',
-  'elk.padding': '[top=120,left=160,bottom=120,right=160]'
-};
-
-export async function applyElkLayout(nodes, edges) {
-  if (!nodes.length) {
-    return { nodes, edges };
+// Lazy load ELK to prevent app crash if import fails
+const getELK = async () => {
+  if (elkInstance) return elkInstance
+  
+  try {
+    // Try bundled version first (no web workers needed)
+    const ELKModule = await import('elkjs/lib/elk.bundled.js')
+    // The bundled version exports ELK as default
+    const ELK = ELKModule.default || ELKModule
+    elkInstance = new ELK()
+    return elkInstance
+  } catch (e1) {
+    console.warn('Bundled ELK import failed, trying default:', e1)
+    try {
+      // Fallback to default
+      const ELKModule = await import('elkjs')
+      const ELK = ELKModule.default || ELKModule
+      elkInstance = new ELK()
+      return elkInstance
+    } catch (e2) {
+      console.error('ELK.js failed to load completely:', e2)
+      return null
+    }
   }
-
-  const elkGraph = {
-    id: 'bowtie-root',
-    layoutOptions: elkOptions,
-    children: nodes.map((node) => ({
-      id: node.id,
-      width: node.width ?? node.measured?.width ?? DEFAULT_NODE_SIZE.width,
-      height: node.height ?? node.measured?.height ?? DEFAULT_NODE_SIZE.height,
-      layoutOptions: node.layoutOptions ?? {}
-    })),
-    edges: edges.map((edge) => ({
-      id: edge.id,
-      sources: [edge.source],
-      targets: [edge.target]
-    }))
-  };
-
-  const layout = await elk.layout(elkGraph);
-  const layoutChildren = layout.children ?? [];
-
-  const layoutedNodes = nodes.map((node) => {
-    const layoutNode = layoutChildren.find((child) => child.id === node.id);
-
-    return {
-      ...node,
-      position: {
-        x: layoutNode?.x ?? 0,
-        y: layoutNode?.y ?? 0
-      },
-      width: layoutNode?.width ?? DEFAULT_NODE_SIZE.width,
-      height: layoutNode?.height ?? DEFAULT_NODE_SIZE.height
-    };
-  });
-
-  return { nodes: layoutedNodes, edges };
 }
 
+export const useELKLayout = () => {
+  const [isLayouting, setIsLayouting] = React.useState(false)
+
+  const applyLayout = async (nodes, edges, setNodes, setEdges) => {
+    const elk = await getELK()
+    if (!elk) {
+      alert('ELK layout engine is not available. Auto-layout feature disabled.')
+      return
+    }
+
+    setIsLayouting(true)
+    try {
+      const graph = {
+        id: 'root',
+        layoutOptions: {
+          'elk.algorithm': 'layered',
+          'elk.direction': 'RIGHT',
+          'elk.spacing.nodeNode': '80',
+          'elk.spacing.edgeNode': '20',
+          'elk.layered.spacing.nodeNodeBetweenLayers': '100',
+          'elk.layered.nodePlacement.strategy': 'BRANDES_KOEPF',
+          'elk.layered.crossingMinimization.strategy': 'LAYER_SWEEP',
+        },
+        children: nodes.map((node) => ({
+          id: node.id,
+          width: node.width || 150,
+          height: node.height || 60,
+        })),
+        edges: edges.map((edge) => ({
+          id: edge.id,
+          sources: [edge.source],
+          targets: [edge.target],
+        })),
+      }
+
+      const layoutedGraph = await elk.layout(graph)
+
+      const layoutedNodes = nodes.map((node) => {
+        const layoutedNode = layoutedGraph.children.find((n) => n.id === node.id)
+        return {
+          ...node,
+          position: {
+            x: layoutedNode?.x || node.position.x,
+            y: layoutedNode?.y || node.position.y,
+          },
+        }
+      })
+
+      setNodes(layoutedNodes)
+    } catch (error) {
+      console.error('ELK layout error:', error)
+      alert('Layout failed: ' + error.message)
+    } finally {
+      setIsLayouting(false)
+    }
+  }
+
+  return { applyLayout, isLayouting }
+}

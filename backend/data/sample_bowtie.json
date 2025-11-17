@@ -1,76 +1,101 @@
 {
-  "hazard": "Driving a vehicle on a highway",
-  "hazard_description": "Operating a vehicle at highway speeds introduces significant dynamic risk due to speed, traffic density, and environmental factors.",
-  "top_event": "Loss of control over the vehicle",
-  "top_event_description": "The driver is no longer able to keep the vehicle in a safe state, resulting in a hazardous situation.",
-  "threats": [
+  "nodes": [
     {
-      "id": "t1",
-      "name": "Intoxicated driving",
-      "description": "Operator impairment due to alcohol or drugs can lead to delayed reactions and poor decision-making."
+      "id": "hazard-1",
+      "type": "hazard",
+      "position": { "x": 100, "y": 300 },
+      "data": {
+        "label": "Vehicle Accident",
+        "description": "Risk of vehicle collision on highway"
+      }
     },
     {
-      "id": "t2",
-      "name": "Speeding",
-      "description": "Operating the vehicle above safe speeds reduces reaction time and increases stopping distance."
+      "id": "threat-1",
+      "type": "threat",
+      "position": { "x": 300, "y": 200 },
+      "data": {
+        "label": "Speeding",
+        "description": "Vehicle exceeding speed limits"
+      }
     },
     {
-      "id": "t3",
-      "name": "Distracted driving",
-      "description": "Mobile device use, eating, or other distractions reduce awareness of roadway conditions."
+      "id": "threat-2",
+      "type": "threat",
+      "position": { "x": 300, "y": 400 },
+      "data": {
+        "label": "Distracted Driving",
+        "description": "Driver not paying attention"
+      }
+    },
+    {
+      "id": "barrier-1",
+      "type": "barrier",
+      "position": { "x": 500, "y": 200 },
+      "data": {
+        "label": "Speed Limit Enforcement",
+        "description": "Police monitoring and speed cameras",
+        "status": "normal"
+      }
+    },
+    {
+      "id": "barrier-2",
+      "type": "barrier",
+      "position": { "x": 500, "y": 400 },
+      "data": {
+        "label": "Driver Training",
+        "description": "Mandatory driver education programs",
+        "status": "normal"
+      }
+    },
+    {
+      "id": "consequence-1",
+      "type": "consequence",
+      "position": { "x": 700, "y": 200 },
+      "data": {
+        "label": "Property Damage",
+        "description": "Vehicle and infrastructure damage"
+      }
+    },
+    {
+      "id": "consequence-2",
+      "type": "consequence",
+      "position": { "x": 700, "y": 400 },
+      "data": {
+        "label": "Personal Injury",
+        "description": "Physical harm to drivers and passengers"
+      }
     }
   ],
-  "prevention_barriers": [
+  "edges": [
     {
-      "id": "pb1",
-      "name": "Designated driver",
-      "description": "Assign a sober driver to eliminate impairment risk before departure."
+      "id": "edge-1",
+      "source": "hazard-1",
+      "target": "threat-1"
     },
     {
-      "id": "pb2",
-      "name": "Lane departure warning",
-      "description": "Assistive technology alerts the driver when the vehicle begins to leave its lane."
+      "id": "edge-2",
+      "source": "hazard-1",
+      "target": "threat-2"
     },
     {
-      "id": "pb3",
-      "name": "Speed governance",
-      "description": "Limit vehicle top speed via hardware or telematics policies to reduce speeding risk."
-    }
-  ],
-  "mitigation_barriers": [
-    {
-      "id": "mb1",
-      "name": "Seatbelt use",
-      "description": "Occupants wearing seatbelts reduce the severity of injuries during a collision."
+      "id": "edge-3",
+      "source": "threat-1",
+      "target": "barrier-1"
     },
     {
-      "id": "mb2",
-      "name": "Defensive driving training",
-      "description": "Training equips drivers to respond safely to loss-of-control scenarios."
+      "id": "edge-4",
+      "source": "threat-2",
+      "target": "barrier-2"
     },
     {
-      "id": "mb3",
-      "name": "Automatic emergency braking",
-      "description": "Sensors detect imminent collisions and apply the brakes to stay below injury thresholds."
-    }
-  ],
-  "consequences": [
-    {
-      "id": "c1",
-      "name": "Injury or death",
-      "description": "Occupants and other road users may suffer serious harm."
+      "id": "edge-5",
+      "source": "barrier-1",
+      "target": "consequence-1"
     },
     {
-      "id": "c2",
-      "name": "Vehicle damage",
-      "description": "Loss of control can result in significant damage to the vehicle and property."
-    },
-    {
-      "id": "c3",
-      "name": "Traffic disruption",
-      "description": "Incidents can close lanes and create congestion for other motorists."
+      "id": "edge-6",
+      "source": "barrier-2",
+      "target": "consequence-2"
     }
   ]
 }
-
-

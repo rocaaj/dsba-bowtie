@@ -1,124 +1,249 @@
-import React, { useCallback, useMemo, useState } from 'react';
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import React, { useState, useCallback, useEffect } from 'react'
+import ReactFlow, {
+  Background,
+  Controls,
+  MiniMap,
+  Panel,
+  useNodesState,
+  useEdgesState,
+  addEdge,
+} from 'reactflow'
+import 'reactflow/dist/style.css'
 
-import BowtieWorkstation from './components/BowtieWorkstation.jsx';
-import LiveDiagramPage from './components/LiveDiagramPage.jsx';
-import sampleDiagram from './data/sampleBowtie.json';
+import { nodeTypes } from './components/NodeTypes'
+import { useELKLayout } from './utils/elkLayout'
+import NodeEditor from './components/NodeEditor'
+import Toolbar from './components/Toolbar'
+import { saveToJSON, validateBowtieSchema } from './utils/dataModel'
 
-const App = () => {
-  const [diagramData, setDiagramData] = useState(sampleDiagram);
-  const [expandedGroups, setExpandedGroups] = useState({
-    prevention: true,
-    mitigation: true
-  });
-  const [failedBarriers, setFailedBarriers] = useState([]);
-  const [selectedNode, setSelectedNode] = useState(null);
-  const [exporter, setExporter] = useState(null);
+const initialNodes = []
+const initialEdges = []
 
-  const failedSet = useMemo(() => new Set(failedBarriers), [failedBarriers]);
+function App() {
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes)
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges)
+  const [selectedNode, setSelectedNode] = useState(null)
+  const [isEditorOpen, setIsEditorOpen] = useState(false)
+  const [error, setError] = useState(null)
 
-  const handleToggleGroup = useCallback((key) => {
-    setExpandedGroups((prev) => ({ ...prev, [key]: !prev[key] }));
-    setSelectedNode(null);
-  }, []);
+  // ELK layout hook
+  const { applyLayout, isLayouting } = useELKLayout()
 
-  const handleToggleBarrierFailure = useCallback((barrierId) => {
-    setFailedBarriers((prev) =>
-      prev.includes(barrierId) ? prev.filter((id) => id !== barrierId) : [...prev, barrierId]
-    );
-  }, []);
+  // Error boundary effect
+  useEffect(() => {
+    const handleError = (event) => {
+      console.error('Global error:', event.error)
+      setError(event.error?.message || 'An error occurred')
+    }
+    window.addEventListener('error', handleError)
+    return () => window.removeEventListener('error', handleError)
+  }, [])
 
-  const handleResetScenario = useCallback(() => {
-    setFailedBarriers([]);
-    setSelectedNode(null);
-  }, []);
-
-  const handleSaveDiagram = useCallback(() => {
-    const blob = new Blob([JSON.stringify(diagramData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'bowtie-diagram.json';
-    link.click();
-    URL.revokeObjectURL(url);
-  }, [diagramData]);
-
-  const handleLoadDiagram = useCallback((jsonData) => {
-    setDiagramData(jsonData);
-    setFailedBarriers([]);
-    setExpandedGroups({
-      prevention: true,
-      mitigation: true
-    });
-    setSelectedNode(null);
-  }, []);
-
-  const handleSelectNode = useCallback((node) => {
-    setSelectedNode(node);
-  }, []);
-
-  const handleExportDiagram = useCallback(
-    (format) => {
-      if (!exporter) return;
-
-      if (format === 'png') {
-        exporter.png?.();
-      } else if (format === 'svg') {
-        exporter.svg?.();
-      } else if (format === 'pdf') {
-        exporter.pdf?.();
+  // Handle edge connections
+  const onConnect = useCallback(
+    (params) => {
+      const newEdge = {
+        ...params,
+        id: `edge-${params.source}-${params.target}-${Date.now()}`,
+        labelStyle: { fill: '#6366f1', fontWeight: 500 },
+        labelBgStyle: { fill: '#fff', fillOpacity: 0.8 },
       }
+      setEdges((eds) => addEdge(newEdge, eds))
     },
-    [exporter]
-  );
+    [setEdges]
+  )
 
-  const registerExporter = useCallback(
-    (handlers) => {
-      setExporter(handlers);
-    },
-    [setExporter]
-  );
+  // Handle node selection
+  const onNodeClick = useCallback((event, node) => {
+    setSelectedNode(node)
+    setIsEditorOpen(true)
+  }, [])
 
-  const sharedProps = {
-    diagramData,
-    expandedGroups,
-    failedBarriers,
-    failedSet,
-    onToggleGroup: handleToggleGroup,
-    onToggleBarrierFailure: handleToggleBarrierFailure,
-    onResetScenario: handleResetScenario,
-    onSaveDiagram: handleSaveDiagram,
-    onLoadDiagram: handleLoadDiagram,
-    onSelectNode: handleSelectNode,
-    selectedNode,
-    registerExporter,
-    onExportDiagram: handleExportDiagram
-  };
+  // Handle pane click to deselect
+  const onPaneClick = useCallback(() => {
+    setSelectedNode(null)
+    setIsEditorOpen(false)
+  }, [])
+
+  // Apply ELK layout
+  const handleAutoLayout = useCallback(async () => {
+    await applyLayout(nodes, edges, setNodes, setEdges)
+  }, [nodes, edges, applyLayout, setNodes, setEdges])
+
+  // Save diagram
+  const handleSave = useCallback(() => {
+    const data = { nodes, edges }
+    if (validateBowtieSchema(data)) {
+      saveToJSON(data)
+    } else {
+      alert('Invalid bowtie diagram structure')
+    }
+  }, [nodes, edges])
+
+  // Load diagram
+  const handleLoad = useCallback((file) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target?.result)
+        if (validateBowtieSchema(data)) {
+          setNodes(data.nodes || [])
+          setEdges(data.edges || [])
+        } else {
+          alert('Invalid bowtie diagram file')
+        }
+      } catch (error) {
+        alert('Error loading file: ' + error)
+      }
+    }
+    reader.readAsText(file)
+  }, [setNodes, setEdges])
+
+  // Update node data
+  const handleNodeUpdate = useCallback((updatedNode) => {
+    setNodes((nds) =>
+      nds.map((node) => (node.id === updatedNode.id ? updatedNode : node))
+    )
+    setSelectedNode(updatedNode)
+  }, [setNodes])
+
+  // Add new node
+  const handleAddNode = useCallback((type) => {
+    const newNode = {
+      id: `${type}-${Date.now()}`,
+      type,
+      position: { x: Math.random() * 400, y: Math.random() * 400 },
+      data: {
+        label: `New ${type}`,
+        description: '',
+      },
+    }
+    setNodes((nds) => [...nds, newNode])
+  }, [setNodes])
+
+  // Delete selected node
+  const handleDeleteNode = useCallback(() => {
+    if (selectedNode) {
+      setNodes((nds) => nds.filter((node) => node.id !== selectedNode.id))
+      setEdges((eds) =>
+        eds.filter(
+          (edge) =>
+            edge.source !== selectedNode.id && edge.target !== selectedNode.id
+        )
+      )
+      setSelectedNode(null)
+      setIsEditorOpen(false)
+    }
+  }, [selectedNode, setNodes, setEdges])
+
+  if (error) {
+    return (
+      <div style={{ 
+        width: '100vw', 
+        height: '100vh', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        flexDirection: 'column',
+        padding: '20px'
+      }}>
+        <h2 style={{ color: '#ef4444', marginBottom: '10px' }}>Error Loading Application</h2>
+        <p style={{ color: '#6b7280', marginBottom: '20px' }}>{error}</p>
+        <button 
+          onClick={() => {
+            setError(null)
+            window.location.reload()
+          }}
+          style={{
+            padding: '10px 20px',
+            background: '#3b82f6',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer'
+          }}
+        >
+          Reload Page
+        </button>
+        <details style={{ marginTop: '20px', maxWidth: '600px' }}>
+          <summary style={{ cursor: 'pointer', color: '#6b7280' }}>Check Console for Details</summary>
+          <pre style={{ 
+            background: '#f3f4f6', 
+            padding: '10px', 
+            borderRadius: '4px',
+            marginTop: '10px',
+            fontSize: '12px',
+            overflow: 'auto'
+          }}>
+            {error}
+          </pre>
+        </details>
+      </div>
+    )
+  }
 
   return (
-    <BrowserRouter>
-      <nav className="top-nav">
-        <Link to="/" className="nav-brand">
-          Bowtie Risk Studio
-        </Link>
-        <div className="nav-links">
-          <Link to="/" className="nav-link">
-            Workstation
-          </Link>
-          <Link to="/diagram" className="nav-link">
-            Live Diagram
-          </Link>
-        </div>
-      </nav>
+    <div style={{ width: '100vw', height: '100vh' }}>
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onConnect={onConnect}
+        onNodeClick={onNodeClick}
+        onPaneClick={onPaneClick}
+        nodeTypes={nodeTypes}
+        fitView
+        snapToGrid={true}
+        snapGrid={[20, 20]}
+        connectionLineStyle={{ stroke: '#6366f1', strokeWidth: 2 }}
+        defaultEdgeOptions={{
+          style: { strokeWidth: 2, stroke: '#6366f1' },
+          animated: false,
+        }}
+        edgeTypes={{}}
+        minZoom={0.1}
+        maxZoom={2}
+      >
+        <Background color="#e5e7eb" gap={20} />
+        <Controls />
+        <MiniMap
+          nodeColor={(node) => {
+            const type = node.type || 'default'
+            const colors = {
+              hazard: '#f59e0b',
+              threat: '#3b82f6',
+              barrier: '#10b981',
+              consequence: '#ef4444',
+            }
+            return colors[type] || '#94a3b8'
+          }}
+          maskColor="rgba(0, 0, 0, 0.1)"
+        />
+        <Panel position="top-left">
+          <Toolbar
+            onAutoLayout={handleAutoLayout}
+            onSave={handleSave}
+            onLoad={handleLoad}
+            onAddNode={handleAddNode}
+            isLayouting={isLayouting}
+          />
+        </Panel>
+      </ReactFlow>
 
-      <Routes>
-        <Route path="/" element={<BowtieWorkstation {...sharedProps} />} />
-        <Route path="/diagram" element={<LiveDiagramPage {...sharedProps} />} />
-      </Routes>
-    </BrowserRouter>
-  );
-};
+      {isEditorOpen && selectedNode && (
+        <NodeEditor
+          node={selectedNode}
+          onUpdate={handleNodeUpdate}
+          onDelete={handleDeleteNode}
+          onClose={() => {
+            setIsEditorOpen(false)
+            setSelectedNode(null)
+          }}
+        />
+      )}
+    </div>
+  )
+}
 
-export default App;
-
+export default App
