@@ -1,6 +1,6 @@
 import React, { useRef } from 'react'
 
-const Toolbar = ({ onAutoLayout, onSave, onLoad, onAddNode, isLayouting }) => {
+const Toolbar = ({ onAutoLayout, onSave, onLoad, onAddNode, isLayouting, focusMode, onToggleFocus }) => {
   const fileInputRef = useRef(null)
 
   const handleFileSelect = (e) => {
@@ -40,6 +40,22 @@ const Toolbar = ({ onAutoLayout, onSave, onLoad, onAddNode, isLayouting }) => {
         + Hazard
       </button>
       <button
+        onClick={() => onAddNode('topEvent')}
+        style={{
+          padding: '8px 16px',
+          background: '#f97316',
+          color: '#fff',
+          border: 'none',
+          borderRadius: '6px',
+          fontSize: '13px',
+          fontWeight: '500',
+          cursor: 'pointer',
+        }}
+        title="Add Top Event (Loss of Control)"
+      >
+        + Top Event
+      </button>
+      <button
         onClick={() => onAddNode('threat')}
         style={{
           padding: '8px 16px',
@@ -67,7 +83,7 @@ const Toolbar = ({ onAutoLayout, onSave, onLoad, onAddNode, isLayouting }) => {
           fontWeight: '500',
           cursor: 'pointer',
         }}
-        title="Add Barrier"
+        title="Add Barrier (Prevention or Mitigation)"
       >
         + Barrier
       </button>
@@ -88,6 +104,22 @@ const Toolbar = ({ onAutoLayout, onSave, onLoad, onAddNode, isLayouting }) => {
         + Consequence
       </button>
       <div style={{ width: '1px', background: '#e5e7eb', margin: '0 4px' }} />
+      <button
+        onClick={onToggleFocus}
+        style={{
+          padding: '8px 16px',
+          background: focusMode ? '#f59e0b' : '#6b7280',
+          color: '#fff',
+          border: 'none',
+          borderRadius: '6px',
+          fontSize: '13px',
+          fontWeight: '500',
+          cursor: 'pointer',
+        }}
+        title="Toggle Focus Mode (Click to focus, dim others)"
+      >
+        {focusMode ? '🔍 Focus On' : '👁️ Focus Off'}
+      </button>
       <button
         onClick={onAutoLayout}
         disabled={isLayouting}
@@ -139,9 +171,12 @@ const Toolbar = ({ onAutoLayout, onSave, onLoad, onAddNode, isLayouting }) => {
       </button>
       <input
         ref={fileInputRef}
+        id="file-input"
+        name="file-input"
         type="file"
         accept=".json"
         onChange={handleFileSelect}
+        autoComplete="off"
         style={{ display: 'none' }}
       />
     </div>

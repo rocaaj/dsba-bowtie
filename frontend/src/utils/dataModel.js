@@ -12,7 +12,7 @@ export const bowtieSchema = {
           id: { type: 'string' },
           type: {
             type: 'string',
-            enum: ['hazard', 'threat', 'barrier', 'consequence'],
+            enum: ['hazard', 'topEvent', 'threat', 'barrier', 'consequence', 'degradationFactor', 'degradationControl'],
           },
           position: {
             type: 'object',
@@ -29,6 +29,7 @@ export const bowtieSchema = {
               label: { type: 'string' },
               description: { type: 'string' },
               status: { type: 'string', enum: ['normal', 'failed'] },
+              barrierType: { type: 'string', enum: ['prevention', 'mitigation'] },
             },
           },
         },
@@ -58,7 +59,7 @@ export const validateBowtieSchema = (data) => {
   // Basic validation - check required fields
   for (const node of data.nodes) {
     if (!node.id || !node.type || !node.position || !node.data) return false
-    if (!['hazard', 'threat', 'barrier', 'consequence'].includes(node.type))
+    if (!['hazard', 'topEvent', 'threat', 'barrier', 'consequence', 'degradationFactor', 'degradationControl'].includes(node.type))
       return false
     if (typeof node.position.x !== 'number' || typeof node.position.y !== 'number')
       return false

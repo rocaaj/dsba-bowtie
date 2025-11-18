@@ -71,6 +71,7 @@ const NodeEditor = ({ node, onUpdate, onDelete, onClose }) => {
 
       <div style={{ marginBottom: '16px' }}>
         <label
+          htmlFor={`node-label-${node.id}`}
           style={{
             display: 'block',
             marginBottom: '6px',
@@ -82,9 +83,12 @@ const NodeEditor = ({ node, onUpdate, onDelete, onClose }) => {
           Label
         </label>
         <input
+          id={`node-label-${node.id}`}
+          name={`node-label-${node.id}`}
           type="text"
           value={label}
           onChange={(e) => setLabel(e.target.value)}
+          autoComplete="off"
           style={{
             width: '100%',
             padding: '8px 12px',
@@ -97,6 +101,7 @@ const NodeEditor = ({ node, onUpdate, onDelete, onClose }) => {
 
       <div style={{ marginBottom: '16px' }}>
         <label
+          htmlFor={`node-description-${node.id}`}
           style={{
             display: 'block',
             marginBottom: '6px',
@@ -108,9 +113,12 @@ const NodeEditor = ({ node, onUpdate, onDelete, onClose }) => {
           Description
         </label>
         <textarea
+          id={`node-description-${node.id}`}
+          name={`node-description-${node.id}`}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={4}
+          autoComplete="off"
           style={{
             width: '100%',
             padding: '8px 12px',
@@ -124,33 +132,78 @@ const NodeEditor = ({ node, onUpdate, onDelete, onClose }) => {
       </div>
 
       {node.type === 'barrier' && (
-        <div style={{ marginBottom: '16px' }}>
-          <label
-            style={{
-              display: 'block',
-              marginBottom: '6px',
-              fontSize: '14px',
-              fontWeight: '500',
-              color: '#374151',
-            }}
-          >
-            Status
-          </label>
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '8px 12px',
-              border: '1px solid #d1d5db',
-              borderRadius: '6px',
-              fontSize: '14px',
-            }}
-          >
-            <option value="normal">Normal</option>
-            <option value="failed">Failed</option>
-          </select>
-        </div>
+        <>
+          <div style={{ marginBottom: '16px' }}>
+            <label
+              htmlFor={`node-barrier-type-${node.id}`}
+              style={{
+                display: 'block',
+                marginBottom: '6px',
+                fontSize: '14px',
+                fontWeight: '500',
+                color: '#374151',
+              }}
+            >
+              Barrier Type
+            </label>
+            <select
+              id={`node-barrier-type-${node.id}`}
+              name={`node-barrier-type-${node.id}`}
+              value={node.data?.barrierType || 'prevention'}
+              onChange={(e) => {
+                onUpdate({
+                  ...node,
+                  data: {
+                    ...node.data,
+                    barrierType: e.target.value,
+                  },
+                })
+              }}
+              autoComplete="off"
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                border: '1px solid #d1d5db',
+                borderRadius: '6px',
+                fontSize: '14px',
+              }}
+            >
+              <option value="prevention">🛡️ Prevention (Left side)</option>
+              <option value="mitigation">🛡️ Mitigation (Right side)</option>
+            </select>
+          </div>
+          <div style={{ marginBottom: '16px' }}>
+            <label
+              htmlFor={`node-status-${node.id}`}
+              style={{
+                display: 'block',
+                marginBottom: '6px',
+                fontSize: '14px',
+                fontWeight: '500',
+                color: '#374151',
+              }}
+            >
+              Status
+            </label>
+            <select
+              id={`node-status-${node.id}`}
+              name={`node-status-${node.id}`}
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              autoComplete="off"
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                border: '1px solid #d1d5db',
+                borderRadius: '6px',
+                fontSize: '14px',
+              }}
+            >
+              <option value="normal">Normal</option>
+              <option value="failed">Failed</option>
+            </select>
+          </div>
+        </>
       )}
 
       <div style={{ display: 'flex', gap: '8px', marginTop: '20px' }}>
