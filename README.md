@@ -2,7 +2,7 @@
 
 ## Team Information
 
-**Team #**: Group 5  
+**Team #**: 5  
 **Team Members**: Anthony Roca, Harper Clark, Ronan Lilley, Sofia Martinez
 **Chosen Approach**: Interactive web-based visualization using React Flow for the diagram editor and Streamlit for the presentation platform. Our approach focuses on making bowtie diagrams more interpretable through story-like narratives, progressive disclosure of information, and focus mode to reduce cognitive overload.
 
